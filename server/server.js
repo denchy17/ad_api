@@ -21,7 +21,7 @@ const dbConnection = async () => {
         console.error('COULD NOT CONNECT TO DATABASE:', error.message);
     }
 };
-
+    
 const PORT = process.env.PORT;
 
 app.listen(PORT, () => {
