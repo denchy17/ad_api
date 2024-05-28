@@ -8,7 +8,7 @@ const dbPassword = process.env.DB_PASSWORD;
 
 const dbConnection = async () => {
     try {
-        await mongoose.connect(`mongodb+srv://${dbOwner}:${dbPassword}@db1.x2w3yhm.mongodb.net/manager`);
+        await mongoose.connect(`mongodb+srv://${dbOwner}:${dbPassword}@cluster0.e3dmxsw.mongodb.net/manager`);
         console.log("CONNECTED TO DATABASE SUCCESSFULLY");
     } catch (error) {
         console.error('COULD NOT CONNECT TO DATABASE:', error.message);
@@ -16,3 +16,5 @@ const dbConnection = async () => {
 };
 
 export default dbConnection;
+
+// cluster0.e3dmxsw.mongodb.net/manager
