@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import generateToken from '../utils/generateToken.js';
 import { validationResult } from 'express-validator';
 
 export const register = async (req, res) => {
@@ -39,9 +40,7 @@ export const login = async (req, res) => {
         return res.status(400).json({ error: 'Incorrect password' });
       }
   
-      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-        expiresIn: '1h'
-      });
+      const token = generateToken(user._id, user.role);
   
       res.json({ token });
     } catch (error) {
