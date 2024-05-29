@@ -16,7 +16,7 @@ app.use('/api/ads', adRoutes);
 
 const PORT = process.env.PORT;
 
-app.listen(PORT, () => {
-  dbConnection();
+app.listen(PORT, async () => {
+  await dbConnection();
   console.log(`Server running on port ${PORT}`);
 });

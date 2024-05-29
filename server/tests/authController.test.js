@@ -1,61 +1,205 @@
-import request from 'supertest';
-import mongoose from 'mongoose';
-import app from '../app';
-import User from '../models/User';
+import bcrypt from 'bcryptjs';
+import { register, login } from '../controllers/authController.js';
+import User from '../models/User.js';
+import { sendTelegramNotification, initializeTelegramBot, stopTelegramBot } from '../utils/sendTelegramNotification.js';
+import generateToken from '../utils/generateToken.js';
 
-beforeEach(() => {
-  jest.clearAllMocks();
+jest.mock('bcryptjs');
+jest.mock('../models/User');
+jest.mock('../utils/sendTelegramNotification.js');
+jest.mock('../utils/generateToken.js', () => jest.fn());
+
+initializeTelegramBot();
+
+afterAll(() => {
+    stopTelegramBot();
 });
 
-afterAll(async () => {
-  await mongoose.connection.close();
-});
+describe('Register Method', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-describe('POST /api/auth/register', () => {
   it('should register a new user', async () => {
-    const userData = {
+    const req = {
+      body: {
+        email: 'test@example.com',
+        phone: '1234567890',
+        name: 'Test User',
+        password: 'password123'
+      }
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
+
+    bcrypt.hash.mockResolvedValue('hashedPassword');
+
+    const saveMock = jest.fn().mockResolvedValue();
+    User.mockReturnValueOnce({ save: saveMock });
+
+    await register(req, res);
+
+    expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
+    expect(User).toHaveBeenCalledWith({
       email: 'test@example.com',
       phone: '1234567890',
       name: 'Test User',
-      password: 'password123'
+      password: 'hashedPassword'
+    });
+    expect(saveMock).toHaveBeenCalled();
+    expect(sendTelegramNotification).toHaveBeenCalledWith(process.env.ADMIN_TELEGRAM_USERNAME, 'New user registered:\nName: Test User\nEmail: test@example.com');
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({ message: 'New user is added successfully' });
+  });
+
+  it('should handle registration errors', async () => {
+    const req = {
+      body: {
+        email: 'test@example.com',
+        phone: '1234567890',
+        name: 'Test User',
+        password: 'password123'
+      }
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
     };
 
-    const response = await request(app).post('/api/auth/register').send(userData);
-    expect(response.status).toBe(201);
-    expect(response.body.message).toBe('New user is added successfully');
+    bcrypt.hash.mockRejectedValue(new Error('Bcrypt error'));
 
-    const user = await User.findOne({ email: 'test@example.com' });
-    expect(user).toBeTruthy();
+    await register(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Error during user registration' });
   });
 });
 
-describe('POST /api/auth/login', () => {
-  beforeEach(async () => {
-    const hashedPassword = await bcrypt.hash('password123', 10);
-    await User.create({ email: 'test@example.com', phone: '1234567890', name: 'Test User', password: hashedPassword });
+describe('Login Method', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+  
+    it('should login a user successfully', async () => {
+      const req = {
+        body: {
+          email: 'test@example.com',
+          password: 'password123'
+        }
+      };
+      const res = {
+        json: jest.fn()
+      };
+  
+      const user = {
+        _id: 'someUserId',
+        role: 'user',
+        password: 'hashedPassword'
+      };
+      User.findOne.mockResolvedValue(user);
+      bcrypt.compare.mockResolvedValue(true);
+      generateToken.mockReturnValue('someGeneratedToken');
+  
+      await login(req, res);
+  
+      expect(User.findOne).toHaveBeenCalledWith({ email: 'test@example.com' });
+      expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedPassword');
+      expect(generateToken).toHaveBeenCalledWith('someUserId', 'user');
+      expect(res.json).toHaveBeenCalledWith({ token: 'someGeneratedToken' });
+    });
+  
+    it('should login an admin successfully', async () => {
+      const req = {
+        body: {
+          email: 'admin@example.com',
+          password: 'adminPassword123'
+        }
+      };
+      const res = {
+        json: jest.fn()
+      };
+  
+      const adminUser = {
+        _id: 'adminUserId',
+        role: 'admin',
+        password: 'hashedAdminPassword'
+      };
+      User.findOne.mockResolvedValue(adminUser);
+      bcrypt.compare.mockResolvedValue(true);
+      generateToken.mockReturnValue('adminToken123');
+  
+      await login(req, res);
+  
+      expect(User.findOne).toHaveBeenCalledWith({ email: 'admin@example.com' });
+      expect(bcrypt.compare).toHaveBeenCalledWith('adminPassword123', 'hashedAdminPassword');
+      expect(generateToken).toHaveBeenCalledWith('adminUserId', 'admin');
+      expect(res.json).toHaveBeenCalledWith({ token: 'adminToken123' });
+    });
+
+    it('should handle login with incorrect password', async () => {
+        const req = {
+          body: {
+            email: 'test@example.com',
+            password: 'incorrectPassword'
+          }
+        };
+        const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn()
+        };
+    
+        const user = {
+          _id: 'someUserId',
+          password: 'hashedPassword'
+        };
+        User.findOne.mockResolvedValue(user);
+        bcrypt.compare.mockResolvedValue(false);
+    
+        await login(req, res);
+    
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Incorrect password' });
+      });
+    
+      it('should handle login with non-existing user', async () => {
+        const req = {
+          body: {
+            email: 'nonexistent@example.com',
+            password: 'password123'
+          }
+        };
+        const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn()
+        };
+    
+        User.findOne.mockResolvedValue(null);
+    
+        await login(req, res);
+    
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: 'There are no such user in system' });
+      });
+    
+      it('should handle login errors', async () => {
+        const req = {
+          body: {
+            email: 'test@example.com',
+            password: 'password123'
+          }
+        };
+        const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn()
+        };
+    
+        User.findOne.mockRejectedValue(new Error('Database error'));
+    
+        await login(req, res);
+    
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Something went wrong with logining the user' });
+      });
   });
-
-  it('should login user with correct credentials', async () => {
-    const loginData = { email: 'test@example.com', password: 'password123' };
-
-    const response = await request(app).post('/api/auth/login').send(loginData);
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('token');
-  });
-
-  it('should return 400 if user not found', async () => {
-    const loginData = { email: 'nonexistent@example.com', password: 'password123' };
-
-    const response = await request(app).post('/api/auth/login').send(loginData);
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBe('There are no such user in system');
-  });
-
-  it('should return 400 if password is incorrect', async () => {
-    const loginData = { email: 'test@example.com', password: 'wrongpassword' };
-
-    const response = await request(app).post('/api/auth/login').send(loginData);
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBe('Incorrect password');
-  });
-});

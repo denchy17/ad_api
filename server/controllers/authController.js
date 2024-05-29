@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 import { validationResult } from 'express-validator';
-import sendTelegramNotification from '../utils/sendTelegramNotification.js';
+import { sendTelegramNotification, initializeTelegramBot } from '../utils/sendTelegramNotification.js';
 
 export const register = async (req, res) => {
     const errors = validationResult(req);
@@ -16,6 +16,7 @@ export const register = async (req, res) => {
     const newUser = new User({ email, phone, name, password: hashedPassword});
     await newUser.save();
 
+    await initializeTelegramBot();
     await sendTelegramNotification(process.env.ADMIN_TELEGRAM_USERNAME, `New user registered:\nName: ${name}\nEmail: ${email}`);
 
     res.status(201).json({ message: 'New user is added successfully' });
