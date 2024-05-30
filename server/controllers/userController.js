@@ -21,17 +21,22 @@ export const getAllUsers = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    try {
+      const user = await User.findById(req.params.id);
+
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      if (req.user.id === req.params.id || req.user.role === 'admin') {
+        await User.deleteOne({ _id: req.params.id });
+        res.json({ message: 'User removed' });
+      } else {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Server error' });
     }
-    await user.remove();
-    res.json({ message: 'User removed' });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
-};
+  };
 
 export const updateUser = async (req, res) => {
   const errors = validationResult(req);
