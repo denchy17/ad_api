@@ -10,7 +10,7 @@ const isUserValidated = async (req, res, next) => {
             const user = await User.findById(decoded.id);
 
             if (user) {
-                if (user.isValidated === true || user.role === 'admin') {
+                if (user.isVerified === true || user.role === 'admin') {
                     req.user = user;
                     next();
                 } else {
