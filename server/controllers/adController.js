@@ -53,7 +53,7 @@ const updateAd = asyncHandler(async (req, res) => {
 
         const ad = await Ad.findById(req.params.id);
 
-        if (ad && (ad.user.equals(req.user._id) || req.user.role === 'admin')) {
+        if (ad) {
             ad.title = req.body.title || ad.title;
             ad.description = req.body.description || ad.description;
             ad.price = req.body.price || ad.price;
@@ -62,7 +62,7 @@ const updateAd = asyncHandler(async (req, res) => {
             res.json(updatedAd);
         } else {
             res.status(404);
-            throw new Error('Ad not found or not authorized');
+            throw new Error('Ad not found');
         }
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -73,12 +73,12 @@ const deleteAd = asyncHandler(async (req, res) => {
     try {
         const ad = await Ad.findById(req.params.id);
 
-        if (ad && (ad.user.equals(req.user._id) || req.user.role === 'admin')) {
-            await ad.remove();
+        if (ad) {
+            await ad.deleteOne();
             res.json({ message: 'Ad removed' });
         } else {
             res.status(404);
-            throw new Error('Ad not found or not authorized');
+            throw new Error('Ad not found');
         }
     } catch (error) {
         res.status(500).json({ message: error.message });
