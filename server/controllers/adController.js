@@ -2,7 +2,7 @@ import asyncHandler from 'express-async-handler';
 import Ad from '../models/Ad.js';
 import { validationResult } from 'express-validator';
 
-const getAds = asyncHandler(async (req, res) => {
+export const getAds = asyncHandler(async (req, res) => {
     try {
         const ads = await Ad.find({});
         res.json(ads);
@@ -11,7 +11,7 @@ const getAds = asyncHandler(async (req, res) => {
     }
 });
 
-const getAdById = asyncHandler(async (req, res) => {
+export const getAdById = asyncHandler(async (req, res) => {
     try {
         const ad = await Ad.findById(req.params.id);
 
@@ -26,7 +26,7 @@ const getAdById = asyncHandler(async (req, res) => {
     }
 });
 
-const createAd = asyncHandler(async (req, res) => {
+export const createAd = asyncHandler(async (req, res) => {
     const { title, description, price } = req.body;
 
     const ad = new Ad({
@@ -44,7 +44,7 @@ const createAd = asyncHandler(async (req, res) => {
     }
 });
 
-const updateAd = asyncHandler(async (req, res) => {
+export const updateAd = asyncHandler(async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -69,7 +69,7 @@ const updateAd = asyncHandler(async (req, res) => {
     }
 });
 
-const deleteAd = asyncHandler(async (req, res) => {
+export const deleteAd = asyncHandler(async (req, res) => {
     try {
         const ad = await Ad.findById(req.params.id);
 
@@ -84,5 +84,3 @@ const deleteAd = asyncHandler(async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
-
-export { getAds, getAdById, createAd, updateAd, deleteAd };

@@ -3,8 +3,9 @@ import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 import { validationResult } from 'express-validator';
 import { sendTelegramNotification, initializeTelegramBot } from '../utils/sendTelegramNotification.js';
+import asyncHandler from 'express-async-handler';
 
-export const register = async (req, res) => {
+export const register = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -23,9 +24,9 @@ export const register = async (req, res) => {
     } catch (error) {
     res.status(500).json({ error: 'Error during user registration' });
     }
-};
+});
 
-export const login = async (req, res) => {
+export const login = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -49,4 +50,4 @@ export const login = async (req, res) => {
     } catch (error) {
       res.status(500).json({ error: 'Something went wrong with logining the user' });
     }
-  };
+  });

@@ -1,26 +1,27 @@
 import User from '../models/User.js';
 import { validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
+import asyncHandler from 'express-async-handler';
 
-export const getCurrentUser = async (req, res) => {
+export const getCurrentUser = asyncHandler(async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
-};
+});
 
-export const getAllUsers = async (req, res) => {
+export const getAllUsers = asyncHandler(async (req, res) => {
   try {
     const users = await User.find().select('-password');
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
-};
+});
 
-export const deleteUser = async (req, res) => {
+export const deleteUser = asyncHandler(async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
 
@@ -33,9 +34,9 @@ export const deleteUser = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
     }
-};
+});
 
-export const updateUser = async (req, res) => {
+export const updateUser = asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -61,4 +62,4 @@ export const updateUser = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
     }
-};
+});
