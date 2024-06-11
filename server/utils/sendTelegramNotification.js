@@ -4,7 +4,7 @@ import User from '../models/User.js';
 
 dotenv.config();
 
-const TelegramService = (() => {
+const TelegramChat = (() => {
   let bot = null;
 
   const initializeTelegramBot = () => {
@@ -65,4 +65,4 @@ const TelegramService = (() => {
   };
 })();
 
-export default TelegramService;
+export default TelegramChat;
