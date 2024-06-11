@@ -15,8 +15,7 @@ const dbConnection = async () => {
 
     while (retries > 0) {
         try {
-            await mongoose.connect(`mongodb+srv://${dbOwner}:${dbPassword}@${dbName}.e3dmxsw.mongodb.net/manager`, {
-            });
+            await mongoose.connect(`mongodb+srv://${dbOwner}:${dbPassword}@${dbName}.e3dmxsw.mongodb.net/manager`);
             console.log("CONNECTED TO DATABASE SUCCESSFULLY");
             break;
         } catch (error) {
